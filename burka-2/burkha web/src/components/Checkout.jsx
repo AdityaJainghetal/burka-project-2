@@ -322,20 +322,14 @@
 
 // export default Checkout
 
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-// import { useEffect, useState } from "react";
-// import { useNavigate } from "react-router-dom";
 import { message } from "antd";
 import { useSelector } from "react-redux";
 import axios from "axios";
-// import { Button, Card, Container, Row, Col } from "react-bootstrap";
 
 const Checkout = () => {
   const [selectedPayment, setSelectedPayment] = useState("payment1");
-
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -352,72 +346,19 @@ const Checkout = () => {
   });
 
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const cartItems = useSelector(state => state.mycart.cart);
 
-   const [isLoading, setIsLoading] = useState(false);
-      
-      const Product = useSelector(state => state.mycart.cart);
-  
-      let totalAmount = 0;
-      let productName = "";
-      let myimg = "";
-  
-      Product.forEach((item) => {
-          totalAmount += item.price * item.qnty;
-          productName += item.name + ",";
-          myimg = item.image;
-      });
-  
-      const initPay = (data) => {
-          const options = {
-              key: "rzp_test_o3vkPO5n8pMXdo",
-              amount: data.amount,
-              currency: data.currency,
-              description: "Order Payment",
-              handler: async (response) => {
-                  try {
-                      const verifyURL = "http://localhost:8080/paymentuser/verify";
-                      await axios.post(verifyURL, response);
-                      message.success("Payment successful!");
-  
-                      // Clear cart and navigate
-                      window.localStorage.removeItem("persist:cartData");
-                      navigate("/");
-                  } catch (error) {
-                      message.error("Payment verification failed.");
-                      console.error(error);
-                  }
-              },
-              theme: {
-                  color: "#3399cc",
-              },
-          };
-  
-          const rzp1 = new window.Razorpay(options);
-          rzp1.open();
-      };
-  
-      const handlePay = async () => {
-          if (Product.length === 0) {
-              message.warning("Your cart is empty.");
-              return;
-          }
-  
-          try {
-              setIsLoading(true);
-              const orderURL = "http://localhost:8080/paymentuser/orders";
-              const { data } = await axios.post(orderURL, {
-                  amount: totalAmount,
-                  productname: productName,
-              });
-  
-              initPay(data.data);
-          } catch (error) {
-              message.error("Failed to create payment order.");
-              console.error(error);
-          } finally {
-              setIsLoading(false);
-          }
-      };
+  // Calculate total amount and product names
+  const { totalAmount, productNames } = cartItems.reduce(
+    (acc, item) => ({
+      totalAmount: acc.totalAmount + (item.price * item.qnty),
+      productNames: [...acc.productNames, item.name]
+    }),
+    { totalAmount: 0, productNames: [] }
+  );
+
+  const productNameString = productNames.join(", ");
 
   useEffect(() => {
     const userDataStr = localStorage.getItem("user");
@@ -432,7 +373,7 @@ const Checkout = () => {
         apartment: "",
         city: userData.user?.city || "",
         state: userData.user?.state || "",
-        postCode: "",
+        postCode: userData.user?.pincode || "",
         phone: userData.user?.mobile1 || "",
         email: userData.user?.email || "",
         notes: "",
@@ -440,12 +381,118 @@ const Checkout = () => {
     }
   }, []);
 
-  const handlePaymentChange = (event) => {
-    setSelectedPayment(event.target.id);
+
+const initPay = (data) => {
+    const options = {
+        key: process.env.REACT_APP_RAZORPAY_KEY_ID || "rzp_test_o3vkPO5n8pMXdo",
+        amount: data.amount,
+        currency: data.currency,
+        name: "Your Company Name",
+        description: `Order for ${productNameString}`,
+        order_id: data.id,
+        handler: async (response) => {
+            try {
+                const verifyURL = `http://localhost:8080/paymentuser/verify`;
+                const verifyPayload = {
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature,
+                };
+
+                console.log("Sending verification:", verifyPayload); // Debug log
+
+                const { data: verificationData } = await axios.post(verifyURL, verifyPayload, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (verificationData.success) {
+                    message.success("Payment successful!");
+                    // Clear cart and navigate
+                    window.localStorage.removeItem("persist:cartData");
+                    navigate("/order-success", { 
+                        state: { 
+                            paymentId: response.razorpay_payment_id,
+                            orderId: response.razorpay_order_id,
+                            verification: verificationData
+                        } 
+                    });
+                } else {
+                    message.error(verificationData.message || "Payment verification failed");
+                }
+            } catch (error) {
+                console.error("Verification error details:", {
+                    error: error.response?.data || error.message,
+                    request: error.config?.data
+                });
+                message.error(
+                    error.response?.data?.message || 
+                    "Payment verification failed. Please contact support."
+                );
+            }
+        },
+        theme: {
+            color: "#3399cc",
+        },
+        prefill: {
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+            contact: formData.phone,
+        },
+        notes: {
+            address: formData.address,
+        },
+    };
+
+    const rzp1 = new window.Razorpay(options);
+    rzp1.open();
+};
+
+
+  const handlePay = async () => {
+    if (cartItems.length === 0) {
+      message.warning("Your cart is empty.");
+      return;
+    }
+
+    if (!formData.firstName || !formData.address || !formData.phone || !formData.email) {
+      message.warning("Please fill in all required details");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const orderURL = `http://localhost:8080/paymentuser/orders`;
+      
+      // Get user ID from localStorage
+      const userDataStr = localStorage.getItem("user");
+      const userId = userDataStr ? JSON.parse(userDataStr).user?._id : "guest";
+
+      const { data } = await axios.post(orderURL, {
+        amount: totalAmount,
+        productname: productNameString,
+        FirstName: formData.firstName,
+        address: formData.address,
+        email: formData.email,
+        id: userId,  // Using the user's _id from localStorage
+        phone: formData.phone,
+        city: formData.city,
+        state: formData.state,
+        postCode: formData.postCode
+      });
+
+      initPay(data.data);
+    } catch (error) {
+      message.error("Failed to create payment order.");
+      console.error("Order creation error:", error.response?.data || error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handlecheckout = () => {
-    navigate("/checkoutpay");
+  const handlePaymentChange = (event) => {
+    setSelectedPayment(event.target.id);
   };
 
   const handleChange = (e) => {
@@ -472,16 +519,17 @@ const Checkout = () => {
         </div>
         <div className="row">
           <div className="col-xl-9 col-lg-8">
-            <form action="#" className="pe-xl-5">
+            <form className="pe-xl-5">
               <div className="row gy-3">
                 <div className="col-sm-6 col-xs-6">
                   <input
                     type="text"
                     className="common-input border-gray-100"
-                    placeholder="First Name"
+                    placeholder="First Name *"
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
+                    required
                   />
                 </div>
                 <div className="col-sm-6 col-xs-6">
@@ -508,20 +556,22 @@ const Checkout = () => {
                   <input
                     type="text"
                     className="common-input border-gray-100"
-                    placeholder="Country"
+                    placeholder="Country *"
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
+                    required
                   />
                 </div>
                 <div className="col-12">
                   <input
                     type="text"
                     className="common-input border-gray-100"
-                    placeholder="House number and street name"
+                    placeholder="House number and street name *"
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
+                    required
                   />
                 </div>
                 <div className="col-12">
@@ -538,20 +588,22 @@ const Checkout = () => {
                   <input
                     type="text"
                     className="common-input border-gray-100"
-                    placeholder="City"
+                    placeholder="City *"
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
+                    required
                   />
                 </div>
                 <div className="col-12">
                   <input
                     type="text"
                     className="common-input border-gray-100"
-                    placeholder="State"
+                    placeholder="State *"
                     name="state"
                     value={formData.state}
                     onChange={handleChange}
+                    required
                   />
                 </div>
                 <div className="col-12">
@@ -566,34 +618,36 @@ const Checkout = () => {
                 </div>
                 <div className="col-12">
                   <input
-                    type="number"
+                    type="tel"
                     className="common-input border-gray-100"
-                    placeholder="Phone"
+                    placeholder="Phone *"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    required
                   />
                 </div>
                 <div className="col-12">
                   <input
                     type="email"
                     className="common-input border-gray-100"
-                    placeholder="Email Address"
+                    placeholder="Email Address *"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
+                    required
                   />
                 </div>
                 <div className="col-12">
                   <div className="my-40">
                     <h6 className="text-lg mb-24">Additional Information</h6>
-                    <input
-                      type="text"
+                    <textarea
                       className="common-input border-gray-100"
                       placeholder="Notes about your order, e.g. special notes for delivery."
                       name="notes"
                       value={formData.notes}
                       onChange={handleChange}
+                      rows="3"
                     />
                   </div>
                 </div>
@@ -604,7 +658,7 @@ const Checkout = () => {
           <div className="col-xl-3 col-lg-4">
             <div className="checkout-sidebar">
               <div className="bg-color-three rounded-8 p-24 text-center">
-                <span className="text-gray-900 text-xl fw-semibold">Your Orders</span>
+                <span className="text-gray-900 text-xl fw-semibold">Your Order</span>
               </div>
               <div className="border border-gray-100 rounded-8 px-24 py-40 mt-24">
                 <div className="mb-32 pb-32 border-bottom border-gray-100 flex-between gap-8">
@@ -612,60 +666,62 @@ const Checkout = () => {
                   <span className="text-gray-900 fw-medium text-xl font-heading-two">Subtotal</span>
                 </div>
 
-                {[1, 2, 3, 4].map((item, index) => (
+                {cartItems.map((item, index) => (
                   <div className="flex-between gap-24 mb-32" key={index}>
                     <div className="flex-align gap-12">
                       <span className="text-gray-900 fw-normal text-md font-heading-two w-144">
-                        HP Chromebook With Intel Celeron
+                        {item.name}
                       </span>
                       <span className="text-gray-900 fw-normal text-md font-heading-two">
                         <i className="ph-bold ph-x" />
                       </span>
-                      <span className="text-gray-900 fw-semibold text-md font-heading-two">1</span>
+                      <span className="text-gray-900 fw-semibold text-md font-heading-two">{item.qnty}</span>
                     </div>
-                    <span className="text-gray-900 fw-bold text-md font-heading-two">$250.00</span>
+                    <span className="text-gray-900 fw-bold text-md font-heading-two">₹{item.price * item.qnty}</span>
                   </div>
                 ))}
 
                 <div className="border-top border-gray-100 pt-30 mt-30">
                   <div className="mb-32 flex-between gap-8">
                     <span className="text-gray-900 font-heading-two text-xl fw-semibold">Subtotal</span>
-                    <span className="text-gray-900 font-heading-two text-md fw-bold">$859.00</span>
+                    <span className="text-gray-900 font-heading-two text-md fw-bold">₹{totalAmount}</span>
                   </div>
                   <div className="mb-0 flex-between gap-8">
                     <span className="text-gray-900 font-heading-two text-xl fw-semibold">Total</span>
-                    <span className="text-gray-900 font-heading-two text-md fw-bold">$859.00</span>
+                    <span className="text-gray-900 font-heading-two text-md fw-bold">₹{totalAmount}</span>
                   </div>
                 </div>
               </div>
 
               <div className="mt-32">
-                {["payment1", "payment2", "payment3"].map((id, idx) => (
-                  <div className="payment-item" key={id}>
+                {[
+                  { id: "payment1", label: "Direct Bank transfer" },
+                  { id: "payment2", label: "Check payments" },
+                  { id: "payment3", label: "Cash on delivery" }
+                ].map((payment) => (
+                  <div className="payment-item" key={payment.id}>
                     <div className="form-check common-check common-radio py-16 mb-0">
                       <input
                         className="form-check-input"
                         type="radio"
                         name="payment"
-                        id={id}
-                        checked={selectedPayment === id}
+                        id={payment.id}
+                        checked={selectedPayment === payment.id}
                         onChange={handlePaymentChange}
                       />
                       <label
                         className="form-check-label fw-semibold text-neutral-600"
-                        htmlFor={id}
+                        htmlFor={payment.id}
                       >
-                        {id === "payment1" && "Direct Bank transfer"}
-                        {id === "payment2" && "Check payments"}
-                        {id === "payment3" && "Cash on delivery"}
+                        {payment.label}
                       </label>
                     </div>
-                    {selectedPayment === id && (
+                    {selectedPayment === payment.id && (
                       <div className="payment-item__content px-16 py-24 rounded-8 bg-main-50 position-relative d-block">
                         <p className="text-gray-800">
-                          Make your payment directly into our bank account. Please use your
-                          Order ID as the payment reference. Your order will not be shipped
-                          until the funds have cleared in our account.
+                          {payment.id === "payment1" && "Make your payment directly into our bank account. Please use your Order ID as the payment reference."}
+                          {payment.id === "payment2" && "Please send a check to our store address."}
+                          {payment.id === "payment3" && "Pay with cash upon delivery."}
                         </p>
                       </div>
                     )}
@@ -679,8 +735,13 @@ const Checkout = () => {
                   experience throughout this website, and for other purposes described
                   in our privacy policy.
                 </p>
-                <button className="btn btn-primary mt-32" type="button"  onClick={handlePay}>
-                  Place Order
+                <button 
+                  className="btn btn-primary mt-32" 
+                  type="button" 
+                  onClick={handlePay}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Processing..." : "Place Order"}
                 </button>
               </div>
             </div>

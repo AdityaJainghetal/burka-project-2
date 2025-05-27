@@ -76,13 +76,13 @@ const crypto = require("crypto");
 // const paymentModel = require("../models/payment.modal");
 const axios = require("axios");
 
-// const OrderModel = require("../models/payment.modal");
+const OrderModel = require("../models/PaymentModule");
 
 // Create Razorpay Order
 router.post("/orders", async (req, res) => {
     console.log("Request Body:", req.body);
     try {
-        const { amount, productname } = req.body; // ✅ Destructure amount and productname
+        const { amount } = req.body; // ✅ Destructure amount and productname
 
         // Optional: validate amount
         if (!amount || isNaN(amount)) {
@@ -118,29 +118,80 @@ router.post("/orders", async (req, res) => {
 });
 
 // Verifying the payment
+// router.post("/verify", async (req, res) => {
+//     try {
+//         const { razorpay_orderID, razorpay_payment_id, razorpay_signature } = req.body;
+//         console.log(req.body,'asdsaaaaaaaaaaaaaaaaaaa')
+//         // Validate the request body
+//         if ( !razorpay_payment_id ) {
+//             return res.status(400).json({ message: "Missing required fields!" });
+//         }
+
+//         const sign = razorpay_orderID + "|" + razorpay_payment_id;
+//         const resultSign = crypto
+//             .createHmac("sha256", process.env.KEY_SECRET)
+//             .update(sign.toString())
+//             .digest("hex");
+
+//         if (razorpay_signature === resultSign) {
+//             return res.status(200).json({ message: "Payment verified successfully" });
+//         } else {
+//             return res.status(400).json({ message: "Payment verification failed" });
+//         }
+//     } catch (error) {
+//         console.error("Error in /verify:", error);
+//         res.status(500).json({ message: "Internal Server Error!" });
+//     }
+// });
+
 router.post("/verify", async (req, res) => {
     try {
-        const { razorpay_orderID, razorpay_payment_id, razorpay_signature } = req.body;
-        console.log(req.body,'asdsaaaaaaaaaaaaaaaaaaa')
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
         // Validate the request body
-        if ( !razorpay_payment_id ) {
-            return res.status(400).json({ message: "Missing required fields!" });
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            return res.status(400).json({ 
+                message: "Missing required fields!",
+                error: "Required fields: razorpay_order_id, razorpay_payment_id, razorpay_signature" 
+            });
         }
 
-        const sign = razorpay_orderID + "|" + razorpay_payment_id;
-        const resultSign = crypto
+        const generated_signature = crypto
             .createHmac("sha256", process.env.KEY_SECRET)
-            .update(sign.toString())
+            .update(`${razorpay_order_id}|${razorpay_payment_id}`)
             .digest("hex");
 
-        if (razorpay_signature === resultSign) {
-            return res.status(200).json({ message: "Payment verified successfully" });
+        if (generated_signature === razorpay_signature) {
+            // Update your database with successful payment
+            await OrderModel.findOneAndUpdate(
+                { orderId: razorpay_order_id },
+                { 
+                    status: 'completed',
+                    paymentId: razorpay_payment_id,
+                    signature: razorpay_signature
+                }
+            );
+            
+            return res.status(200).json({ 
+                success: true,
+                message: "Payment verified successfully",
+                orderId: razorpay_order_id,
+                paymentId: razorpay_payment_id
+            });
         } else {
-            return res.status(400).json({ message: "Payment verification failed" });
+            return res.status(400).json({ 
+                success: false,
+                message: "Payment verification failed",
+                error: "Invalid signature" 
+            });
         }
     } catch (error) {
         console.error("Error in /verify:", error);
-        res.status(500).json({ message: "Internal Server Error!" });
+        res.status(500).json({ 
+            success: false,
+            message: "Internal Server Error!",
+            error: error.message 
+        });
     }
 });
 
