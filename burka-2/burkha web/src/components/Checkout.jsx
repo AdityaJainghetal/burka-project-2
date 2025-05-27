@@ -411,7 +411,7 @@ const initPay = (data) => {
                     message.success("Payment successful!");
                     // Clear cart and navigate
                     window.localStorage.removeItem("persist:cartData");
-                    navigate("/order-success", { 
+                    navigate("/", { 
                         state: { 
                             paymentId: response.razorpay_payment_id,
                             orderId: response.razorpay_order_id,
