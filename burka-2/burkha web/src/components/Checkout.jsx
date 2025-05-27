@@ -322,13 +322,20 @@
 
 // export default Checkout
 
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
+// import { useEffect, useState } from "react";
+// import { useNavigate } from "react-router-dom";
+import { message } from "antd";
+import { useSelector } from "react-redux";
+import axios from "axios";
+// import { Button, Card, Container, Row, Col } from "react-bootstrap";
 
 const Checkout = () => {
   const [selectedPayment, setSelectedPayment] = useState("payment1");
 
-  // State for form fields initialized as empty strings
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -344,26 +351,91 @@ const Checkout = () => {
     notes: "",
   });
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+
+   const [isLoading, setIsLoading] = useState(false);
+      
+      const Product = useSelector(state => state.mycart.cart);
+  
+      let totalAmount = 0;
+      let productName = "";
+      let myimg = "";
+  
+      Product.forEach((item) => {
+          totalAmount += item.price * item.qnty;
+          productName += item.name + ",";
+          myimg = item.image;
+      });
+  
+      const initPay = (data) => {
+          const options = {
+              key: "rzp_test_o3vkPO5n8pMXdo",
+              amount: data.amount,
+              currency: data.currency,
+              description: "Order Payment",
+              handler: async (response) => {
+                  try {
+                      const verifyURL = "http://localhost:8080/paymentuser/verify";
+                      await axios.post(verifyURL, response);
+                      message.success("Payment successful!");
+  
+                      // Clear cart and navigate
+                      window.localStorage.removeItem("persist:cartData");
+                      navigate("/");
+                  } catch (error) {
+                      message.error("Payment verification failed.");
+                      console.error(error);
+                  }
+              },
+              theme: {
+                  color: "#3399cc",
+              },
+          };
+  
+          const rzp1 = new window.Razorpay(options);
+          rzp1.open();
+      };
+  
+      const handlePay = async () => {
+          if (Product.length === 0) {
+              message.warning("Your cart is empty.");
+              return;
+          }
+  
+          try {
+              setIsLoading(true);
+              const orderURL = "http://localhost:8080/paymentuser/orders";
+              const { data } = await axios.post(orderURL, {
+                  amount: totalAmount,
+                  productname: productName,
+              });
+  
+              initPay(data.data);
+          } catch (error) {
+              message.error("Failed to create payment order.");
+              console.error(error);
+          } finally {
+              setIsLoading(false);
+          }
+      };
 
   useEffect(() => {
-    // Get user data from localStorage (assumed to be stored as JSON string)
     const userDataStr = localStorage.getItem("user");
     if (userDataStr) {
       const userData = JSON.parse(userDataStr);
       setFormData({
         firstName: userData.user?.firmName || "",
-        lastName: "", // no lastName in your data
+        lastName: "",
         businessName: userData.user?.contactType || "",
-        country: "India", // keep placeholder text as is
+        country: "India",
         address: userData.user?.address || "",
-        apartment: "", // no apartment data available
+        apartment: "",
         city: userData.user?.city || "",
         state: userData.user?.state || "",
-        postCode: "", // no postcode data available
+        postCode: "",
         phone: userData.user?.mobile1 || "",
         email: userData.user?.email || "",
-        notes: "", // no notes data available
+        notes: "",
       });
     }
   }, []);
@@ -372,10 +444,10 @@ const Checkout = () => {
     setSelectedPayment(event.target.id);
   };
 
-  const handlecheckout=()=>{
-    navigate("/checkoutpay")
-  }
-  // Controlled inputs update formData state
+  const handlecheckout = () => {
+    navigate("/checkoutpay");
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -388,14 +460,14 @@ const Checkout = () => {
     <section className="checkout py-80">
       <div className="container container-lg">
         <div className="border border-gray-100 rounded-8 px-30 py-20 mb-40">
-          <span className="">
+          <span>
             Have a coupon?{" "}
             <Link
               to="/cart"
               className="fw-semibold text-gray-900 hover-text-decoration-underline hover-text-main-600"
             >
               Click here to enter your code
-            </Link>{" "}
+            </Link>
           </span>
         </div>
         <div className="row">
@@ -436,7 +508,7 @@ const Checkout = () => {
                   <input
                     type="text"
                     className="common-input border-gray-100"
-                    placeholder="United states (US)"
+                    placeholder="Country"
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
@@ -476,7 +548,7 @@ const Checkout = () => {
                   <input
                     type="text"
                     className="common-input border-gray-100"
-                    placeholder="Sans Fransisco"
+                    placeholder="State"
                     name="state"
                     value={formData.state}
                     onChange={handleChange}
@@ -528,6 +600,7 @@ const Checkout = () => {
               </div>
             </form>
           </div>
+
           <div className="col-xl-3 col-lg-4">
             <div className="checkout-sidebar">
               <div className="bg-color-three rounded-8 p-24 text-center">
@@ -535,62 +608,26 @@ const Checkout = () => {
               </div>
               <div className="border border-gray-100 rounded-8 px-24 py-40 mt-24">
                 <div className="mb-32 pb-32 border-bottom border-gray-100 flex-between gap-8">
-                  <span className="text-gray-900 fw-medium text-xl font-heading-two">
-                    Product
-                  </span>
-                  <span className="text-gray-900 fw-medium text-xl font-heading-two">
-                    Subtotal
-                  </span>
+                  <span className="text-gray-900 fw-medium text-xl font-heading-two">Product</span>
+                  <span className="text-gray-900 fw-medium text-xl font-heading-two">Subtotal</span>
                 </div>
-                <div className="flex-between gap-24 mb-32">
-                  <div className="flex-align gap-12">
-                    <span className="text-gray-900 fw-normal text-md font-heading-two w-144">
-                      HP Chromebook With Intel Celeron
-                    </span>
-                    <span className="text-gray-900 fw-normal text-md font-heading-two">
-                      <i className="ph-bold ph-x" />
-                    </span>
-                    <span className="text-gray-900 fw-semibold text-md font-heading-two">1</span>
+
+                {[1, 2, 3, 4].map((item, index) => (
+                  <div className="flex-between gap-24 mb-32" key={index}>
+                    <div className="flex-align gap-12">
+                      <span className="text-gray-900 fw-normal text-md font-heading-two w-144">
+                        HP Chromebook With Intel Celeron
+                      </span>
+                      <span className="text-gray-900 fw-normal text-md font-heading-two">
+                        <i className="ph-bold ph-x" />
+                      </span>
+                      <span className="text-gray-900 fw-semibold text-md font-heading-two">1</span>
+                    </div>
+                    <span className="text-gray-900 fw-bold text-md font-heading-two">$250.00</span>
                   </div>
-                  <span className="text-gray-900 fw-bold text-md font-heading-two">$250.00</span>
-                </div>
-                <div className="flex-between gap-24 mb-32">
-                  <div className="flex-align gap-12">
-                    <span className="text-gray-900 fw-normal text-md font-heading-two w-144">
-                      HP Chromebook With Intel Celeron
-                    </span>
-                    <span className="text-gray-900 fw-normal text-md font-heading-two">
-                      <i className="ph-bold ph-x" />
-                    </span>
-                    <span className="text-gray-900 fw-semibold text-md font-heading-two">1</span>
-                  </div>
-                  <span className="text-gray-900 fw-bold text-md font-heading-two">$250.00</span>
-                </div>
-                <div className="flex-between gap-24 mb-32">
-                  <div className="flex-align gap-12">
-                    <span className="text-gray-900 fw-normal text-md font-heading-two w-144">
-                      HP Chromebook With Intel Celeron
-                    </span>
-                    <span className="text-gray-900 fw-normal text-md font-heading-two">
-                      <i className="ph-bold ph-x" />
-                    </span>
-                    <span className="text-gray-900 fw-semibold text-md font-heading-two">1</span>
-                  </div>
-                  <span className="text-gray-900 fw-bold text-md font-heading-two">$250.00</span>
-                </div>
-                <div className="flex-between gap-24 mb-32">
-                  <div className="flex-align gap-12">
-                    <span className="text-gray-900 fw-normal text-md font-heading-two w-144">
-                      HP Chromebook With Intel Celeron
-                    </span>
-                    <span className="text-gray-900 fw-normal text-md font-heading-two">
-                      <i className="ph-bold ph-x" />
-                    </span>
-                    <span className="text-gray-900 fw-semibold text-md font-heading-two">1</span>
-                  </div>
-                  <span className="text-gray-900 fw-bold text-md font-heading-two">$250.00</span>
-                </div>
-                <div className="border-top border-gray-100 pt-30  mt-30">
+                ))}
+
+                <div className="border-top border-gray-100 pt-30 mt-30">
                   <div className="mb-32 flex-between gap-8">
                     <span className="text-gray-900 font-heading-two text-xl fw-semibold">Subtotal</span>
                     <span className="text-gray-900 font-heading-two text-md fw-bold">$859.00</span>
@@ -601,96 +638,48 @@ const Checkout = () => {
                   </div>
                 </div>
               </div>
+
               <div className="mt-32">
-                <div className="payment-item">
-                  <div className="form-check common-check common-radio py-16 mb-0">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="payment"
-                      id="payment1"
-                      checked={selectedPayment === "payment1"}
-                      onChange={handlePaymentChange}
-                    />
-                    <label
-                      className="form-check-label fw-semibold text-neutral-600"
-                      htmlFor="payment1"
-                    >
-                      Direct Bank transfer
-                    </label>
-                  </div>
-                  {selectedPayment === "payment1" && (
-                    <div className="payment-item__content px-16 py-24 rounded-8 bg-main-50 position-relative d-block">
-                      <p className="text-gray-800">
-                        Make your payment directly into our bank account. Please use your
-                        Order ID as the payment reference. Your order will not be shipped
-                        until the funds have cleared in our account.
-                      </p>
+                {["payment1", "payment2", "payment3"].map((id, idx) => (
+                  <div className="payment-item" key={id}>
+                    <div className="form-check common-check common-radio py-16 mb-0">
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="payment"
+                        id={id}
+                        checked={selectedPayment === id}
+                        onChange={handlePaymentChange}
+                      />
+                      <label
+                        className="form-check-label fw-semibold text-neutral-600"
+                        htmlFor={id}
+                      >
+                        {id === "payment1" && "Direct Bank transfer"}
+                        {id === "payment2" && "Check payments"}
+                        {id === "payment3" && "Cash on delivery"}
+                      </label>
                     </div>
-                  )}
-                </div>
-                <div className="payment-item">
-                  <div className="form-check common-check common-radio py-16 mb-0">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="payment"
-                      id="payment2"
-                      checked={selectedPayment === "payment2"}
-                      onChange={handlePaymentChange}
-                    />
-                    <label
-                      className="form-check-label fw-semibold text-neutral-600"
-                      htmlFor="payment2"
-                    >
-                      Check payments
-                    </label>
+                    {selectedPayment === id && (
+                      <div className="payment-item__content px-16 py-24 rounded-8 bg-main-50 position-relative d-block">
+                        <p className="text-gray-800">
+                          Make your payment directly into our bank account. Please use your
+                          Order ID as the payment reference. Your order will not be shipped
+                          until the funds have cleared in our account.
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  {selectedPayment === "payment2" && (
-                    <div className="payment-item__content px-16 py-24 rounded-8 bg-main-50 position-relative d-block">
-                      <p className="text-gray-800">
-                        Make your payment directly into our bank account. Please use your
-                        Order ID as the payment reference. Your order will not be shipped
-                        until the funds have cleared in our account.
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <div className="payment-item">
-                  <div className="form-check common-check common-radio py-16 mb-0">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="payment"
-                      id="payment3"
-                      checked={selectedPayment === "payment3"}
-                      onChange={handlePaymentChange}
-                    />
-                    <label
-                      className="form-check-label fw-semibold text-neutral-600"
-                      htmlFor="payment3"
-                    >
-                      Cash on delivery
-                    </label>
-                  </div>
-                  {selectedPayment === "payment3" && (
-                    <div className="payment-item__content px-16 py-24 rounded-8 bg-main-50 position-relative d-block">
-                      <p className="text-gray-800">
-                        Make your payment directly into our bank account. Please use your
-                        Order ID as the payment reference. Your order will not be shipped
-                        until the funds have cleared in our account.
-                      </p>
-                    </div>
-                  )}
-                </div>
+                ))}
               </div>
+
               <div className="mt-32 pt-32 border-top border-gray-100">
                 <p className="text-gray-500">
                   Your personal data will be used to process your order, support your
                   experience throughout this website, and for other purposes described
                   in our privacy policy.
                 </p>
-                <button className="btn btn-primary mt-32" type="submit" onClick={handlecheckout()}>
+                <button className="btn btn-primary mt-32" type="button"  onClick={handlePay}>
                   Place Order
                 </button>
               </div>

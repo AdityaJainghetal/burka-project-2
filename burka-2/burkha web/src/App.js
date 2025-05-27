@@ -61,7 +61,7 @@ function App() {
         </ProtectedRoute>} />
         <Route exact path="/login" element={<Login />} />
         <Route exact path="/register" element={<Registration />} />
-        <Route exact path='/checkout' element={<CheckoutPage />} />
+        <Route exact path='/checkout' element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
         <Route exact path='/become-seller' element={<BecomeSellerPage />} />
         <Route exact path='/wishlist' element={<WishlistPage />} />
         <Route exact path='/account' element={<AccountPage />} />
@@ -73,7 +73,7 @@ function App() {
         <Route exact path='/vendor-two' element={<VendorTwoPage />} />
         <Route exact path="/about" element={<About />} />
         <Route path="/dashboardoverview" element={<User />} />
-        <Route path="/checkoutpay" element={<CheckOut/> }/>
+        <Route path="/checkoutpay" element={<ProtectedRoute> <CheckOut/></ProtectedRoute> }/>
         <Route
           exact
           path='/vendor-two-details'
