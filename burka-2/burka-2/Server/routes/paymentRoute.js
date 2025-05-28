@@ -77,6 +77,8 @@ const crypto = require("crypto");
 const axios = require("axios");
 
 const OrderModel = require("../models/PaymentModule");
+const Payment = require("../models/payment.modal");
+const mongoose = require("mongoose");
 
 // Create Razorpay Order
 router.post("/orders", async (req, res) => {
@@ -117,32 +119,6 @@ router.post("/orders", async (req, res) => {
     }
 });
 
-// Verifying the payment
-// router.post("/verify", async (req, res) => {
-//     try {
-//         const { razorpay_orderID, razorpay_payment_id, razorpay_signature } = req.body;
-//         console.log(req.body,'asdsaaaaaaaaaaaaaaaaaaa')
-//         // Validate the request body
-//         if ( !razorpay_payment_id ) {
-//             return res.status(400).json({ message: "Missing required fields!" });
-//         }
-
-//         const sign = razorpay_orderID + "|" + razorpay_payment_id;
-//         const resultSign = crypto
-//             .createHmac("sha256", process.env.KEY_SECRET)
-//             .update(sign.toString())
-//             .digest("hex");
-
-//         if (razorpay_signature === resultSign) {
-//             return res.status(200).json({ message: "Payment verified successfully" });
-//         } else {
-//             return res.status(400).json({ message: "Payment verification failed" });
-//         }
-//     } catch (error) {
-//         console.error("Error in /verify:", error);
-//         res.status(500).json({ message: "Internal Server Error!" });
-//     }
-// });
 
 router.post("/verify", async (req, res) => {
     try {
@@ -193,6 +169,34 @@ router.post("/verify", async (req, res) => {
             error: error.message 
         });
     }
+});
+
+
+// Fetch Payments by User ID
+router.get("/payments/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Validate userId
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    const payments2 = await Payment.find({ userId })
+    console.log(payments2)
+
+    const payments = await Payment.find({ userId })
+      .select("productname orderId amount paymentMode status receivingDate remark")
+      .sort({ receivingDate: -1 }); // Sort by date, newest first
+
+    if (!payments || payments.length === 0) {
+      return res.status(404).json({ message: "No payments found for this user" });
+    }
+
+    res.status(200).json({ data: payments });
+  } catch (error) {
+    console.error("Error in /payments/:userId:", error);
+    res.status(500).json({ message: "Internal Server Error!" });
+  }
 });
 
 module.exports = router;
