@@ -366,7 +366,7 @@ const Registration = () => {
 
   return (
     <>
-      <ColorInit color={true} />
+      <ColorInit color={false} />
       <ScrollToTop smooth color="#FA6400" />
       <HeaderOne category={true} />
 

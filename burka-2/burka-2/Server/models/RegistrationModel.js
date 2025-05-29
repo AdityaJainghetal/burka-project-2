@@ -23,6 +23,10 @@ const registrationSchema = new mongoose.Schema({
       message: props => `${props.value} is not a valid mobile number!`
     }
   },
+   order: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Order"
+  },
   mobile2: {
     type: String,
     validate: {
@@ -72,7 +76,11 @@ const registrationSchema = new mongoose.Schema({
   discount:{
     type:Number,
     required:true
-  }
+  },
+  limit:{
+    type:Number,
+    required:true
+  },
 }, { timestamps: true }); // Automatically manage createdAt and updatedAt fields
 
 const Registration = mongoose.model('Registration', registrationSchema);

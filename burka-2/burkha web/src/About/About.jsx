@@ -13,7 +13,7 @@ const About = () => {
     <>
 
       {/* Preloader */}
-      <Preloader />
+      {/* <Preloader /> */}
 
       {/* ScrollToTop */}
       <ScrollToTop smooth color="#299E60" />

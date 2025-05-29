@@ -745,48 +745,55 @@ const RecommendedOne = () => {
                         alt={course.name}
                       />
                     </div>
-                    <div className="product-card__content p-sm-2">
-                      <h6 className="title text-lg fw-semibold mt-12 mb-8">
-                        <div 
-                          onClick={() => handleCourseClick(course._id)}
-                          className="link text-line-2 cursor-pointer"
-                        >
-                          {course.name}
-                        </div>
-                      </h6>
-                      <div className="flex-align gap-4">
-                        <span className="text-main-600 text-md d-flex">
-                          <i className="ph-fill ph-storefront" />
-                        </span>
-                        <span className="text-gray-500 text-xs">
-                          {course.fabric || "No fabric specified"}
-                        </span>
-                      </div>
-                      <div className="product-card__content mt-12">
-                        <div className="product-card__price mb-8">
-                          <span className="text-heading text-md fw-semibold ">
-                            {course.stock}
-                            <span className="text-gray-500 fw-normal">/Qty</span>{" "}
-                          </span>
-                          <span className="text-gray-400 text-md fw-semibold text-decoration-line-through">
-                            ₹{course.price}
-                          </span>
-                        </div>
-                        <div className="flex-align gap-6">
-                          <span className="text-xs fw-bold text-gray-600">4.8</span>
-                          <span className="text-15 fw-bold text-warning-600 d-flex">
-                            <i className="ph-fill ph-star" />
-                          </span>
-                          <span className="text-xs fw-bold text-gray-600">(₹{course.price})</span>
-                        </div>
-                        <button
-                          onClick={() => handleaddtoCart(course)}
-                          className="product-card__cart btn bg-main-50 text-main-600 hover-bg-main-600 hover-text-white py-11 px-24 rounded-pill flex-align gap-8 mt-24 w-100 justify-content-center"
-                        >
-                          Add To Cart <i className="ph ph-shopping-cart" />
-                        </button>
-                      </div>
-                    </div>
+                                     
+                                 <div className="product-card__content p-3 rounded-lg shadow-sm bg-white hover:shadow-md transition duration-300">
+  <h6 className="title text-lg fw-semibold mt-3 mb-3 text-dark">
+    <div 
+      onClick={() => handleCourseClick(course._id)}
+      className="link text-line-2 cursor-pointer text-success"
+    >
+      {course.name}
+    </div>
+  </h6>
+
+  <div className="d-flex align-items-center justify-content-between mb-2">
+    <div className="d-flex align-items-center gap-2">
+      <span className="text-success text-md me-2">
+        <i className="ph-fill ph-storefront text-success fs-5" />
+      </span>
+      <span className="text-muted text-sm">
+        {course.fabric || "No fabric specified"}
+      </span>
+    </div>
+    <span className="text-end text-sm text-dark fw-semibold">
+      Size: <span className="text-success">{course.size}</span>
+    </span>
+  </div>
+
+  <div className="product-card__content mt-3">
+    <div className="product-card__price mb-3 d-flex align-items-center gap-3">
+      <span className="text-muted text-decoration-line-through fw-semibold">
+        ₹{course.originalPrice || course.price + 200}
+      </span>
+      <span className="text-success fw-bold fs-5">
+        ₹{course.price}
+      </span>
+    </div>
+
+    <span className="text-sm fw-semibold text-success">
+      {course.stock}: 
+      <span className="fw-normal text-muted"> Stock </span>
+    </span>
+
+    <button
+      onClick={() => handleaddtoCart(course)}
+      className="product-card__cart btn btn-success mt-3 w-100 rounded-pill d-flex align-items-center justify-content-center gap-2"
+    >
+      Add To Cart <i className="ph ph-shopping-cart" />
+    </button>
+  </div>
+</div>
+
                   </div>
                 </div>
               ))}

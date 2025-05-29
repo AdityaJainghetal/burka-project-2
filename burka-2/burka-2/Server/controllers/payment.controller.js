@@ -111,8 +111,10 @@
 // };
 
 
-const Payment = require('../models/PaymentModule'); // ✅ Corrected: model file extension
+const Payment = require('../models/payment.modal'); // ✅ Corrected: model file extension
 const Order = require('../models/OrderModule');       // ✅ Corrected: consistent naming
+
+const User = require("../models/RegistrationModel")
 
 // Create a new payment
 const createPayment = async (req, res) => {
@@ -161,6 +163,7 @@ const createPayment = async (req, res) => {
       receivingDate: receivingDate || new Date(),
       remark: remark || '',
       status: 'Completed',
+      // userId: req.user._id
     });
 
     const savedPayment = await payment.save();

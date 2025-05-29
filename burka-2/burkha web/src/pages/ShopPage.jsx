@@ -14,16 +14,16 @@ const ShopPage = () => {
   return (
     <>
       {/* ColorInit */}
-      <ColorInit color={true} />
+      <ColorInit color={false} />
 
       {/* ScrollToTop */}
       <ScrollToTop smooth color="#FA6400" />
 
       {/* Preloader */}
-      <Preloader />
+      {/* <Preloader /> */}
 
       {/* HeaderOne */}
-      <HeaderOne category={true} />
+      <HeaderOne category={false} />
 
       {/* Breadcrumb */}
       <Breadcrumb title={"Shop"} />

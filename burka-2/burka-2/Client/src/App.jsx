@@ -56,6 +56,7 @@ import BrandDisplay from "./pages/BrandDisplay";
 import Banner from "./pages/Banner/Banner";
 import Bannerdisplay from "./pages/Banner/Bannerdisplay";
 import Customer from "./pages/ViewCustomer/Customer";
+import AllDetail from "./pages/ViewCustomer/AllDetail";
 
 
 function App() {
@@ -376,6 +377,8 @@ function AppContent({ onLogout }) {
               <Route path="/banner" element={<Banner/>}/>
               <Route path="/bannerdisplay" element={<Bannerdisplay/>}/>
               <Route path="/customer" element={<Customer/>}/>
+            <Route path="/vendordetails/:id" element={<AllDetail/>} />
+
 
 
             </Routes>

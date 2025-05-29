@@ -14,14 +14,12 @@ const ContactPage = () => {
   return (
     <>
       {/* ColorInit */}
-      <ColorInit color={true} />
+      <ColorInit color={false} />
 
       {/* ScrollToTop */}
       <ScrollToTop smooth color="#FA6400" />
 
-      {/* Preloader */}
-      <Preloader />
-
+   
       {/* HeaderTwo */}
       <HeaderOne category={true} />
 

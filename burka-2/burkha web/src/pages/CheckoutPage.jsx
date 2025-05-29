@@ -25,7 +25,7 @@ const CheckoutPage = () => {
       <ScrollToTop smooth color="#FA6400" />
 
       {/* Preloader */}
-      <Preloader />
+      {/* <Preloader /> */}
 
       {/* HeaderTwo */}
       <HeaderOne category={true} />

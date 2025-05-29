@@ -1,6 +1,5 @@
 
 
-
 import { useState, useEffect } from "react";
 import { useCart } from "../CartContext";
 import axios from "axios";
@@ -43,6 +42,8 @@ const CartPage = () => {
     });
     setEditedQuantities(initial);
   }, [cart]);
+
+  console.log(vendors,'aaaaaaaaaaaaaaaaaaaaaaaaaaa')
 
   useEffect(() => {
     const fetchVendors = async () => {
@@ -180,6 +181,8 @@ const CartPage = () => {
             address: vendor?.address || "",
             city: vendor?.city || "",
             state: vendor?.state || "",
+            limit: vendor?.limit || "",
+
             discount: vendor?.discount || 0
           },
           discountPercentage: discount,

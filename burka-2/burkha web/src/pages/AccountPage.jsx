@@ -24,10 +24,10 @@ const AccountPage = () => {
       <ScrollToTop smooth color="#FA6400" />
 
       {/* Preloader */}
-      <Preloader />
+      {/* <Preloader /> */}
 
       {/* HeaderTwo */}
-      <HeaderTwo category={true} />
+      <HeaderTwo category={false} />
 
       {/* Breadcrumb */}
       <Breadcrumb title={"Account"} />

@@ -3693,56 +3693,55 @@ const ShopSection = () => {
                       className="w-auto max-w-unset"
                     />
                   </div>
-                  <div className="product-card__content mt-16">
-                    <h6 className="title text-lg fw-semibold mt-12 mb-8">
-                      <div
-                        className="link text-line-2 cursor-pointer"
-                        tabIndex={0}
-                      >
-                        {course.name}
-                      </div>
-                    </h6>
-                    <div className="flex-align mb-20 mt-16 gap-6">
-                      <span className="text-xs fw-medium text-gray-500">4.8</span>
-                      <span className="text-15 fw-medium text-warning-600 d-flex">
-                        <i className="ph-fill ph-star" />
-                      </span>
-                      <span className="text-xs fw-medium text-gray-500"> ₹{course.price}</span>
-                    </div>
-                    <div className="mt-8">
-                      <div
-                        className="progress w-100 bg-color-three rounded-pill h-4"
-                        role="progressbar"
-                        aria-label="Basic example"
-                        aria-valuenow={35}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                      >
-                        <div
-                          className="progress-bar bg-main-two-600 rounded-pill"
-                          style={{ width: '35%' }}
-                        />
-                      </div>
-                      <span className="text-gray-900 text-xs fw-medium mt-8">
-                        {course.fabric || 'Sold: 18/35'}
-                      </span>
-                    </div>
-                    <div className="product-card__price my-20">
-                      <span className="text-gray-400 text-md fw-semibold text-decoration-line-through">
-                        ₹{course.price}
-                      </span>
-                      <span className="text-heading text-md fw-semibold ">
-                        {course.stock} <span className="text-gray-500 fw-normal">/Qty</span>{' '}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => handleaddtoCart(course)}
-                      className="product-card__cart btn bg-gray-50 text-heading hover-bg-main-600 hover-text-white py-11 px-24 rounded-8 flex-center gap-8 fw-medium"
-                      tabIndex={0}
-                    >
-                      Add To Cart <i className="ph ph-shopping-cart" />
-                    </button>
-                  </div>
+                                  
+                                 <div className="product-card__content p-3 rounded-lg shadow-sm bg-white hover:shadow-md transition duration-300">
+  <h6 className="title text-lg fw-semibold mt-3 mb-3 text-dark">
+    <div 
+      onClick={() => handleCourseClick(course._id)}
+      className="link text-line-2 cursor-pointer text-success"
+    >
+      {course.name}
+    </div>
+  </h6>
+
+  <div className="d-flex align-items-center justify-content-between mb-2">
+    <div className="d-flex align-items-center gap-2">
+      <span className="text-success text-md me-2">
+        <i className="ph-fill ph-storefront text-success fs-5" />
+      </span>
+      <span className="text-muted text-sm">
+        {course.fabric || "No fabric specified"}
+      </span>
+    </div>
+    <span className="text-end text-sm text-dark fw-semibold">
+      Size: <span className="text-success">{course.size}</span>
+    </span>
+  </div>
+
+  <div className="product-card__content mt-3">
+    <div className="product-card__price mb-3 d-flex align-items-center gap-3">
+      <span className="text-muted text-decoration-line-through fw-semibold">
+        ₹{course.originalPrice || course.price + 200}
+      </span>
+      <span className="text-success fw-bold fs-5">
+        ₹{course.price}
+      </span>
+    </div>
+
+    <span className="text-sm fw-semibold text-success">
+      {course.stock}: 
+      <span className="fw-normal text-muted"> Stock </span>
+    </span>
+
+    <button
+      onClick={() => handleaddtoCart(course)}
+      className="product-card__cart btn btn-success mt-3 w-100 rounded-pill d-flex align-items-center justify-content-center gap-2"
+    >
+      Add To Cart <i className="ph ph-shopping-cart" />
+    </button>
+  </div>
+</div>
+
                 </div>
               ))}
             </div>

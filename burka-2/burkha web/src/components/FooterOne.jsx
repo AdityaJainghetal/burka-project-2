@@ -5,7 +5,7 @@ const FooterOne = () => {
     return (
         <footer className="footer py-120">
             <img
-                src="assets/images/bg/body-bottom-bg.png"
+                src=""
                 alt="BG"
                 className="body-bottom-bg"
             />

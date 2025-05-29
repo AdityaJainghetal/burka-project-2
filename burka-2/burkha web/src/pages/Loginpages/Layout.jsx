@@ -11,13 +11,21 @@ import {
   List,
   X
 } from 'react-bootstrap-icons';
+import { useNavigate } from 'react-router-dom';
+
 
 const Layout = ({ children, activeTab, setActiveTab }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+  const navigate= useNavigate()
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
+
+  const handleLogut=()=>{
+    localStorage.clear();
+    navigate("/")
+  }
+ 
 
   return (
     <div className="dashboard-wrapper">
@@ -66,16 +74,7 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
               >
                 <Calendar className="me-2" /> Your Bookings
               </Nav.Link>
-              <Nav.Link 
-                active={activeTab === 'cart'} 
-                onClick={() => {
-                  setActiveTab('cart');
-                  setMobileMenuOpen(false);
-                }}
-                className="d-flex align-items-center"
-              >
-                <Cart className="me-2" /> Your Cart Bookings
-              </Nav.Link>
+             
               <Nav.Link 
                 active={activeTab === 'address'} 
                 onClick={() => {
@@ -109,11 +108,12 @@ const Layout = ({ children, activeTab, setActiveTab }) => {
               <Nav.Link 
                 onClick={() => {
                   // Handle logout
-                  setMobileMenuOpen(false);
+                  // setMobileMenuOpen(false);
+                  handleLogut()
                 }}
                 className="d-flex align-items-center"
               >
-                <BoxArrowLeft className="me-2" /> Logout
+                <BoxArrowLeft className="me-2"/> Logout
               </Nav.Link>
             </Nav>
           </Col>

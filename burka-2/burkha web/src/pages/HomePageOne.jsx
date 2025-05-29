@@ -29,13 +29,13 @@ const HomePageOne = () => {
     <>
 
       {/* Preloader */}
-      <Preloader />
+      {/* <Preloader /> */}
 
       {/* ScrollToTop */}
       <ScrollToTop smooth color="#299E60" />
 
       {/* ColorInit */}
-      {/* <ColorInit color={false} /> */}
+      <ColorInit color={false} />
 
       {/* HeaderOne */}
       <HeaderOne />

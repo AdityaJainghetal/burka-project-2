@@ -20,7 +20,7 @@ const { id } = useParams();
     <>
 
       {/* Preloader */}
-      <Preloader />
+      {/* <Preloader /> */}
 
       {/* ColorInit */}
       <ColorInit color={false} />
