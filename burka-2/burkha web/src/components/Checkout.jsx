@@ -322,10 +322,12 @@
 
 // export default Checkout
 
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { message } from "antd";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { clearCart } from "../Redux/CardSlice";
 import axios from "axios";
 
 const Checkout = () => {
@@ -343,22 +345,24 @@ const Checkout = () => {
     phone: "",
     email: "",
     notes: "",
+    chequeNumber: "",
   });
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
-  const cartItems = useSelector(state => state.mycart.cart);
+  const cartItems = useSelector((state) => state.mycart.cart);
 
   // Calculate total amount and product names
-  const { totalAmount, productNames } = cartItems.reduce(
+  const { totalAmount, productNameString } = cartItems.reduce(
     (acc, item) => ({
-      totalAmount: acc.totalAmount + (item.price * item.qnty),
-      productNames: [...acc.productNames, item.name]
+      totalAmount: acc.totalAmount + item.price * item.qnty,
+      productNameString: acc.productNameString
+        ? `${acc.productNameString}, ${item.name}`
+        : item.name,
     }),
-    { totalAmount: 0, productNames: [] }
+    { totalAmount: 0, productNameString: "" }
   );
-
-  const productNameString = productNames.join(", ");
 
   useEffect(() => {
     const userDataStr = localStorage.getItem("user");
@@ -377,78 +381,63 @@ const Checkout = () => {
         phone: userData.user?.mobile1 || "",
         email: userData.user?.email || "",
         notes: "",
+        chequeNumber: "",
       });
     }
   }, []);
 
-
-const initPay = (data) => {
+  const initPay = (data) => {
     const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID || "rzp_test_o3vkPO5n8pMXdo",
-        amount: data.amount,
-        currency: data.currency,
-        name: "Your Company Name",
-        description: `Order for ${productNameString}`,
-        order_id: data.id,
-        handler: async (response) => {
-            try {
-                const verifyURL = `http://localhost:8080/paymentuser/verify`;
-                const verifyPayload = {
-                    razorpay_order_id: response.razorpay_order_id,
-                    razorpay_payment_id: response.razorpay_payment_id,
-                    razorpay_signature: response.razorpay_signature,
-                };
+      key: process.env.REACT_APP_RAZORPAY_KEY_ID || "rzp_test_o3vkPO5n8pMXdo",
+      amount: data.amount,
+      currency: data.currency,
+      name: "Your Company Name",
+      description: `Order for ${productNameString}`,
+      order_id: data.id,
+      handler: async (response) => {
+        try {
+          const verifyURL = "http://localhost:8080/paymentuser/verify"; // Adjust port
+          const verifyPayload = {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          };
 
-                console.log("Sending verification:", verifyPayload); // Debug log
+          const { data: verificationData } = await axios.post(verifyURL, verifyPayload, {
+            headers: { "Content-Type": "application/json" },
+          });
 
-                const { data: verificationData } = await axios.post(verifyURL, verifyPayload, {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (verificationData.success) {
-                    message.success("Payment successful!");
-                    // Clear cart and navigate
-                    window.localStorage.removeItem("persist:cartData");
-                    navigate("/", { 
-                        state: { 
-                            paymentId: response.razorpay_payment_id,
-                            orderId: response.razorpay_order_id,
-                            verification: verificationData
-                        } 
-                    });
-                } else {
-                    message.error(verificationData.message || "Payment verification failed");
-                }
-            } catch (error) {
-                console.error("Verification error details:", {
-                    error: error.response?.data || error.message,
-                    request: error.config?.data
-                });
-                message.error(
-                    error.response?.data?.message || 
-                    "Payment verification failed. Please contact support."
-                );
-            }
-        },
-        theme: {
-            color: "#3399cc",
-        },
-        prefill: {
-            name: `${formData.firstName} ${formData.lastName}`,
-            email: formData.email,
-            contact: formData.phone,
-        },
-        notes: {
-            address: formData.address,
-        },
+          if (verificationData.success) {
+            message.success("Payment successful!");
+            dispatch(clearCart());
+            window.localStorage.removeItem("persist:cartData");
+            navigate("/", {
+              state: {
+                paymentId: response.razorpay_payment_id,
+                orderId: response.razorpay_order_id,
+                verification: verificationData,
+              },
+            });
+          } else {
+            message.error(verificationData.message || "Payment verification failed");
+          }
+        } catch (error) {
+          console.error("Verification error:", error.response?.data || error.message);
+          message.error(error.response?.data?.message || "Payment verification failed.");
+        }
+      },
+      theme: { color: "#3399cc" },
+      prefill: {
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        contact: formData.phone,
+      },
+      notes: { address: formData.address },
     };
 
     const rzp1 = new window.Razorpay(options);
     rzp1.open();
-};
-
+  };
 
   const handlePay = async () => {
     if (cartItems.length === 0) {
@@ -457,34 +446,55 @@ const initPay = (data) => {
     }
 
     if (!formData.firstName || !formData.address || !formData.phone || !formData.email) {
-      message.warning("Please fill in all required details");
+      message.warning("Please fill in all required details.");
+      return;
+    }
+
+    if (selectedPayment === "payment2" && !formData.chequeNumber) {
+      message.warning("Please enter a cheque number.");
       return;
     }
 
     try {
       setIsLoading(true);
-      const orderURL = `http://localhost:8080/paymentuser/orders`;
-      
-      // Get user ID from localStorage
+      const orderURL = "http://localhost:8080/paymentuser/orders"; // Adjust port
+
       const userDataStr = localStorage.getItem("user");
       const userId = userDataStr ? JSON.parse(userDataStr).user?._id : "guest";
 
-      const { data } = await axios.post(orderURL, {
+      const cartData = cartItems.map((item) => ({
+        productId: item.id, // Maps to _id in Product model
+        name: item.name,
+        quantity: item.qnty,
+        price: item.price,
+      }));
+
+      const payload = {
         amount: totalAmount,
         productname: productNameString,
+        cartItems: cartData,
         FirstName: formData.firstName,
         address: formData.address,
         email: formData.email,
-        id: userId,  // Using the user's _id from localStorage
+        id: userId,
         phone: formData.phone,
         city: formData.city,
         state: formData.state,
-        postCode: formData.postCode
-      });
+        postCode: formData.postCode,
+        paymentMode: selectedPayment,
+        chequeNumber: selectedPayment === "payment2" ? formData.chequeNumber : undefined,
+      };
 
-      initPay(data.data);
+      const { data } = await axios.post(orderURL, payload);
+
+      if (selectedPayment === "payment1") {
+        initPay(data.data);
+      } else {
+        message.success("Order placed successfully, awaiting confirmation.");
+        navigate("/order-confirmation", { state: { orderId: data.data.id } });
+      }
     } catch (error) {
-      message.error("Failed to create payment order.");
+      message.error(error.response?.data?.message || "Failed to create order.");
       console.error("Order creation error:", error.response?.data || error.message);
     } finally {
       setIsLoading(false);
@@ -638,6 +648,19 @@ const initPay = (data) => {
                     required
                   />
                 </div>
+                {selectedPayment === "payment2" && (
+                  <div className="col-12">
+                    <input
+                      type="text"
+                      className="common-input border-gray-100"
+                      placeholder="Cheque Number *"
+                      name="chequeNumber"
+                      value={formData.chequeNumber}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                )}
                 <div className="col-12">
                   <div className="my-40">
                     <h6 className="text-lg mb-24">Additional Information</h6>
@@ -695,9 +718,9 @@ const initPay = (data) => {
 
               <div className="mt-32">
                 {[
-                  { id: "payment1", label: "Direct Bank transfer" },
-                  { id: "payment2", label: "Check payments" },
-                  { id: "payment3", label: "Cash on delivery" }
+                  { id: "payment1", label: "Direct Bank Transfer" },
+                  { id: "payment2", label: "Check Payments" },
+                  { id: "payment3", label: "Cash on Delivery" },
                 ].map((payment) => (
                   <div className="payment-item" key={payment.id}>
                     <div className="form-check common-check common-radio py-16 mb-0">
@@ -719,7 +742,8 @@ const initPay = (data) => {
                     {selectedPayment === payment.id && (
                       <div className="payment-item__content px-16 py-24 rounded-8 bg-main-50 position-relative d-block">
                         <p className="text-gray-800">
-                          {payment.id === "payment1" && "Make your payment directly into our bank account. Please use your Order ID as the payment reference."}
+                          {payment.id === "payment1" &&
+                            "Make your payment directly into our bank account. Please use your Order ID as the payment reference."}
                           {payment.id === "payment2" && "Please send a check to our store address."}
                           {payment.id === "payment3" && "Pay with cash upon delivery."}
                         </p>
@@ -731,13 +755,16 @@ const initPay = (data) => {
 
               <div className="mt-32 pt-32 border-top border-gray-100">
                 <p className="text-gray-500">
-                  Your personal data will be used to process your order, support your
-                  experience throughout this website, and for other purposes described
-                  in our privacy policy.
+                  Your personal data will be used to process your order, support your experience
+                  throughout this website, and for other purposes described in our{" "}
+                  <Link to="#" className="text-main-600 text-decoration-underline">
+                    privacy policy
+                  </Link>
+                  .
                 </p>
-                <button 
-                  className="btn btn-primary mt-32" 
-                  type="button" 
+                <button
+                  className="btn btn-main mt-40 py-18 w-100 rounded-8 mt-56"
+                  type="button"
                   onClick={handlePay}
                   disabled={isLoading}
                 >

@@ -4,12 +4,19 @@ const { generateBarcode } = require('../config/bwip-js.config');
 
 // Get all products
 const getAllProducts = async (req, res) => {
+    const { search, category } = req.query;
     try {
-        const products = await Product.find().populate("category").populate("subCategory");
-        res.status(200).json(products);
+      const query = {};
+      if (search) {
+        query.name = { $regex: search, $options: "i" }; // Case-insensitive search
+      }
+      if (category) {
+        query.category = category;
+      }
+      const products = await Product.find(query).populate("category subCategory");
+      res.status(200).json(products);
     } catch (error) {
-        console.error("Error fetching products:", error);
-        res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Error fetching products", error });
     }
 };
 

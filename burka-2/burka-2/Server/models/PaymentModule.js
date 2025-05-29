@@ -4,32 +4,30 @@ const mongoose = require('mongoose');
 const paymentSchema = new mongoose.Schema(
   {
   
-    amount: {
-      type: Number,
-      min: 0,
-    },
-    paymentMode: {
-      type: String,
-      enum: ['cash', 'cheque', 'online', 'card', 'upi'], // example modes
-     
-    },
-    chequeNumber: {
-      type: String,
-      
-    },
-    receivingDate: {
-      type: Date,
-      default: Date.now,
-    },
-    remark: {
-      type: String,
-     
-    },
-    status: {
-      type: String,
-      enum: ['Pending', 'Completed', 'Failed'],
-      default: 'Pending',
-    },
+    orderId: { type: String, required: true, unique: true },
+    amount: { type: Number, required: true, min: 0 },
+    productname: { type: String },
+    cartItems: [
+      {
+        productId: { type: mongoose.Schema.Types.ObjectId, ref: "product", required: true },
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true, min: 1 },
+        price: { type: Number, required: true, min: 0 },
+      },
+    ],
+    userId: { type: String, required: true },
+    FirstName: { type: String, required: true },
+    address: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    postCode: { type: String },
+    paymentMode: { type: String, enum: ["Cash", "Cheque", "Online Transfer"], required: true },
+    status: { type: String, enum: ["Pending", "Completed", "Failed"], default: "Pending" },
+    paymentId: { type: String },
+    signature: { type: String },
+    createdAt: { type: Date, default: Date.now },
     
   },
   { timestamps: true }
